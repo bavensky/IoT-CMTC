@@ -1,9 +1,15 @@
 #include <WiFi.h>
 #include <HTTPClient.h>
 
+#include "DHT.h"        // เรียกใช้งานไลบรารี่ DHT.h
+#define DHTPIN 14       // เชื่อมต่อเซ็นเซอร์ขา 14
+#define DHTTYPE DHTxx   // เลือกชนิดเซ็นเซอร์แบบ DHT
+DHT dht(DHTPIN, DHTTYPE);
+
 #define YOUR_WIFI_NAME "xxxxxxxx"   // ชื่อไวไฟที่ต้องการเชื่อมต่อ
 #define YOUR_WIFI_PASS "xxxxxxxx"   // รหัสไวไฟที่ต้องการเชื่อมต่อ
 #define YOUR_API_KEY   "xxxxxxxx"   // กรอก API key ที่ได้จากเว็บ Thingspeak
+
 
 
 // ฟังก์ชันส่งข้อมูลเข้าเว็บ Thingspeak โดยรับพารามิเตอร์ชื่อ url
@@ -27,7 +33,7 @@ void sent2Thingspeak(String url) {
 void setup() {
   Serial.begin(115200);             // กำหนดความเร็วในการติดต่อสื่อสาร
   pinMode(LED_BUILTIN, OUTPUT);     // กำหนดให้ LED บนบอร์ดเป็น OUTPUT
-
+  dht.begin();                      // ประกาศใช้งาน dht library
 
   Serial.print("Connecting to ");
   Serial.println(YOUR_WIFI_NAME);   // แสดงชื่อไวไฟที่เชื่อมต่อใน Serial monitor
@@ -54,11 +60,21 @@ void setup() {
 
 
 void loop() {
+  float h = dht.readHumidity();     // อ่านค่าอุณหภูมิจาก dht11
+  float t = dht.readTemperature();  // อ่านค่าคามชื้นจาก dht11
 
-  int number = random(0, 100);  // สุ่มเลข 0 - 100 เก็บไว้ในตัวแปรชื่อ number
+  // แสดงผลค่าอุณหภูมิ และความชื้นสัมพัทธ์ผ่าน serial monitor
+  Serial.print("Humidity: ");       
+  Serial.print(h);
+  Serial.print(" %\t");
+  Serial.print("Temperature: ");
+  Serial.print(t);
+  Serial.println(" *C ");
 
-  String url =  "http://api.thingspeak.com/update?api_key="
-                + String(YOUR_API_KEY) + "&field1=" + String(number);
+
+  // สร้าง url ที่จะส่งไปยัง thingspeak
+  String url =  "http://api.thingspeak.com/update?api_key=" + String(YOUR_API_KEY)
+                + "&field1=" + String(t) + "&field2=" + String(h);
 
   sent2Thingspeak(url); // ส่งค่าไปยังเว็บ Thingspeak.com
   delay(20000);         //  หน่วงเวลา 20 วินาที
